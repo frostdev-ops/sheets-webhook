@@ -6,9 +6,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 A Google Sheets add-on/script (similar to Document Studio) that watches for new Google Forms responses landing in a sheet, transforms each response into a customized message using a user-defined template, and posts it to a Discord channel via webhook.
 
-**Status: greenfield.** The repo is currently empty. The notes below record the intended architecture and platform constraints so future sessions don't re-derive them.
+**Status: Phase 1 implemented** (`Code.js`, `Template.js`, `Discord.js`, `Sidebar.html`, `Checks.js`) and pushed via clasp. Run `runChecks()` from the script editor — or the Node harness pattern (mock `Utilities`/`Session`, eval the files) — to verify templating/chunking logic. Phase 2 (Marketplace packaging): code is add-on-safe and deployed as version 1; the remaining console steps are the runbook in `PUBLISHING.md` (GCP project, consent screen, Marketplace SDK). `PRIVACY.md` and `README.md` are the verification collateral.
 
-## Intended Architecture
+## Architecture
 
 - **Platform**: Google Apps Script (V8 runtime), bound to the response spreadsheet. Plain `.gs`/`.js` files — no bundler, no npm modules at runtime (Apps Script cannot `require`/`import` packages).
 - **Trigger**: an **installable** `onFormSubmit` trigger on the spreadsheet (simple triggers cannot call external services like `UrlFetchApp`). The event object's `e.namedValues` maps column headers → response values.
@@ -27,12 +27,13 @@ A Google Sheets add-on/script (similar to Document Studio) that watches for new 
 
 Local development uses [clasp](https://github.com/google/clasp) to sync with the Apps Script project:
 
+The npm package is scoped — `npx clasp` does NOT resolve; always use `npx @google/clasp`:
+
 ```bash
-npx clasp login              # one-time OAuth (interactive — ask James to run it)
-npx clasp create --type sheets --title "sheets-webhook"   # first-time project creation
-npx clasp push               # upload local files to Apps Script
-npx clasp pull               # download remote changes
-npx clasp open               # open the script editor in a browser
+npx @google/clasp login      # one-time OAuth (interactive — ask James to run it)
+npx @google/clasp push -f    # upload local files (-f skips the manifest confirmation prompt)
+npx @google/clasp pull       # download remote changes
+npx @google/clasp open-script  # open the script editor in a browser
 ```
 
-There is no build/lint/test toolchain yet. Testing is done by pushing with `clasp push` and triggering a test form submission (or running a function from the script editor). If a test harness is added later, document its commands here.
+The project is already created (`.clasp.json` has the scriptId; container sheet + script links are in the Drive account admin@frostdev.io). Note: `clasp create` clones the remote's default `appsscript.json` over the local one — re-add `oauthScopes` if that ever happens again. Testing = `runChecks()` (script editor or Node harness) plus a real form submission.

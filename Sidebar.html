@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <style>
+    body { font: 13px/1.45 Arial, sans-serif; margin: 12px; color: #202124; }
+    label { display: block; font-weight: bold; margin: 12px 0 4px; }
+    input[type=url], textarea { width: 100%; box-sizing: border-box; padding: 6px; border: 1px solid #dadce0; border-radius: 4px; }
+    textarea { font-family: monospace; height: 180px; resize: vertical; }
+    .chips { margin: 6px 0; }
+    .chip { display: inline-block; margin: 2px; padding: 2px 8px; background: #f1f3f4; border-radius: 10px; cursor: pointer; font-size: 12px; }
+    .chip:hover { background: #e8eaed; }
+    button { margin: 12px 8px 0 0; padding: 6px 14px; border: none; border-radius: 4px; cursor: pointer; }
+    #save { background: #1a73e8; color: #fff; }
+    #test { background: #f1f3f4; }
+    #status { margin-top: 10px; font-size: 12px; min-height: 16px; }
+    .ok { color: #188038; }
+    .err { color: #d93025; }
+    details { margin-top: 14px; font-size: 12px; color: #5f6368; }
+    code { background: #f1f3f4; padding: 0 3px; border-radius: 3px; }
+    #posting { font-size: 12px; color: #5f6368; }
+    .dot { font-size: 10px; vertical-align: 1px; }
+    .on { color: #188038; }
+    .off { color: #d93025; }
+  </style>
+</head>
+<body>
+  <div id="posting">Checking status…</div>
+
+  <label for="url">Discord webhook URL</label>
+  <input type="url" id="url" placeholder="https://discord.com/api/webhooks/…">
+
+  <label for="template">Message template (Discord markdown)</label>
+  <div class="chips" id="chips"></div>
+  <textarea id="template" placeholder="Leave empty to send the full response ({{_all}})"></textarea>
+
+  <button id="save">Save</button>
+  <button id="test">Send test</button>
+  <div id="status"></div>
+
+  <details>
+    <summary>Placeholders &amp; filters</summary>
+    <p>Click a chip to insert a placeholder. <code>{{_all}}</code> sends every
+    question and answer; <code>{{_timestamp}}</code> is the submission time.
+    An empty template defaults to the full response.</p>
+    <p>Format an answer with filters, chained with pipes:
+    <code>{{Name|escape|bold}}</code></p>
+    <p><code>bold</code> <code>italic</code> <code>underline</code>
+    <code>strike</code> <code>spoiler</code> <code>code</code>
+    <code>codeblock</code> <code>quote</code> <code>list</code>
+    <code>escape</code> <code>upper</code> <code>lower</code> <code>trim</code></p>
+    <p><code>list</code> turns a multi-select answer into bullet points;
+    <code>escape</code> makes free-text answers render literally instead of as
+    markdown.</p>
+    <p>Everything else is plain Discord markdown: <code># heading</code>,
+    <code>**bold**</code>, <code>&gt; quote</code>, <code>```code```</code>,
+    <code>- list</code>, <code>||spoiler||</code>. Long messages are split and
+    delivered in order automatically.</p>
+  </details>
+
+  <script>
+    var $ = function (id) { return document.getElementById(id); };
+
+    function setStatus(msg, ok) {
+      $('status').textContent = msg;
+      $('status').className = ok ? 'ok' : 'err';
+    }
+
+    function addChip(text) {
+      var el = document.createElement('span');
+      el.className = 'chip';
+      el.textContent = text;
+      el.onclick = function () { insertAtCursor($('template'), '{{' + text + '}}'); };
+      $('chips').appendChild(el);
+    }
+
+    function insertAtCursor(el, text) {
+      var s = el.selectionStart || 0;
+      var e = el.selectionEnd || 0;
+      el.value = el.value.slice(0, s) + text + el.value.slice(e);
+      el.selectionStart = el.selectionEnd = s + text.length;
+      el.focus();
+    }
+
+    function refreshStatus() {
+      google.script.run.withSuccessHandler(function (st) {
+        var dot = '<span class="dot ' + (st.postingEnabled ? 'on">●' : 'off">●') + '</span> ';
+        var queued = st.queueDepth ? ' — ' + st.queueDepth + ' message(s) queued' : '';
+        $('posting').innerHTML = dot + 'Posting ' + (st.postingEnabled ? 'enabled' : 'disabled') + queued;
+      }).getStatus();
+    }
+    refreshStatus();
+
+    google.script.run.withSuccessHandler(function (cfg) {
+      $('url').value = cfg.webhookUrl;
+      $('template').value = cfg.template;
+    }).getConfig();
+
+    google.script.run.withSuccessHandler(function (headers) {
+      headers.concat(['_all', '_timestamp']).forEach(addChip);
+    }).getHeaders();
+
+    $('save').onclick = function () {
+      setStatus('Saving…', true);
+      google.script.run
+        .withSuccessHandler(function (msg) { setStatus(msg, true); })
+        .withFailureHandler(function (err) { setStatus(err.message, false); })
+        .saveConfig($('url').value, $('template').value);
+    };
+
+    $('test').onclick = function () {
+      setStatus('Sending…', true);
+      google.script.run
+        .withSuccessHandler(function (msg) { setStatus(msg, true); refreshStatus(); })
+        .withFailureHandler(function (err) { setStatus(err.message, false); })
+        .sendTest();
+    };
+  </script>
+</body>
+</html>

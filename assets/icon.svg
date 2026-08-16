@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <rect width="128" height="128" rx="24" fill="#5865F2"/>
+  <!-- spreadsheet glyph -->
+  <g fill="none" stroke="#FFFFFF" stroke-width="7" stroke-linecap="round">
+    <rect x="22" y="24" width="52" height="62" rx="8" fill="#FFFFFF" stroke="none"/>
+  </g>
+  <g stroke="#5865F2" stroke-width="5" stroke-linecap="round">
+    <line x1="30" y1="42" x2="66" y2="42"/>
+    <line x1="30" y1="56" x2="66" y2="56"/>
+    <line x1="30" y1="70" x2="66" y2="70"/>
+    <line x1="48" y1="34" x2="48" y2="78"/>
+  </g>
+  <!-- arrow to Discord -->
+  <g fill="#FFFFFF">
+    <path d="M62 96 L86 96 L86 84 L108 102 L86 120 L86 108 L62 108 Z" transform="translate(0,-14)"/>
+  </g>
+</svg>
