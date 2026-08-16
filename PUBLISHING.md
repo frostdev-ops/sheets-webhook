@@ -1,54 +1,49 @@
 # Publishing runbook — Google Workspace Marketplace
 
-Current state: script pushed and deployed.
+## Identifiers
 
-- **Script ID**: `1EI1qHVVgQiyWgnO5Z_DT3iMdFdOXKS31WQh756XFyH92gKfyGufYw_b8`
-- **Deployment**: `AKfycbx_FHC9m8uxPsXFuONOXuILQI4MIOstMRIIiUVtAwFbZF_al4SvIg3TY4okiNS0U8fOpg` @ version 1
-- The code is already add-on-safe: Document Properties (per-spreadsheet config),
-  `onInstall`, authMode-aware `onOpen`, explicit `oauthScopes`, `urlFetchWhitelist`.
+| Thing | Value |
+| :--- | :--- |
+| Script ID | `1EI1qHVVgQiyWgnO5Z_DT3iMdFdOXKS31WQh756XFyH92gKfyGufYw_b8` |
+| Deployment | `AKfycbx_FHC9m8uxPsXFuONOXuILQI4MIOstMRIIiUVtAwFbZF_al4SvIg3TY4okiNS0U8fOpg` @ version 1 |
+| GCP project | `sheets-webhook-addon-505715` |
+| Marketplace App ID | `176826552943` |
+| Draft listing | https://workspace.google.com/marketplace/app/appname/176826552943 |
+| Container sheet | https://drive.google.com/open?id=1YcD2hj-fWLIgl7PD4e6LAZRA5eL0PZ76vn1BycEIBZ4 |
 
-## Two publishing paths
+## Done
 
-- **Private (frostdev.io domain only)** — no OAuth verification review, live in
-  minutes. Do this first; it is also how you QA the real install flow.
-- **Public** — requires OAuth verification (sensitive scope
-  `script.external_request`): homepage + privacy policy URLs, scope
-  justifications, demo screencast. Budget days-to-weeks for review.
+- Standard GCP project created and attached to the Apps Script project.
+- OAuth consent screen configured (External, publishing status **Testing**),
+  four scopes registered, test users added: `jameskueller1@gmail.com`,
+  `admin@frostdev.io`.
+- Marketplace SDK enabled.
+- **App Configuration** saved: visibility **Public + Unlisted** (permanent),
+  Individual + Admin install, Sheets add-on wired to the script ID at version 1,
+  developer info (FrostDev / non-trader / admin@frostdev.io).
+- **Store Listing** draft saved: name, descriptions, Free of charge,
+  Communication category, all icons + banner + 1280×800 screenshot, support
+  links pointing at this repo, all regions, draft testers enabled.
 
-## Steps (both paths)
+## Remaining, in order
 
-1. **Standard GCP project** (Editor add-ons cannot publish from the default
-   Apps Script-managed project):
-   - [console.cloud.google.com](https://console.cloud.google.com) → New project
-     (e.g. `sheets-webhook-addon`); note its **project number** (IAM & Admin → Settings).
-   - Apps Script editor → ⚙ Project Settings → Google Cloud Platform (GCP)
-     Project → Change project → paste the project number.
-
-2. **OAuth consent screen** (GCP console → APIs & Services → OAuth consent screen):
-   - User type **External** (Internal if only frostdev.io will ever use it —
-     Internal also skips verification entirely).
-   - App name (must not contain "Google"), support email, 120×120 logo,
-     homepage URL, privacy policy URL (host `PRIVACY.md` — GitHub Pages or
-     frostdev.io), authorized domain.
-   - Add the four scopes from `appsscript.json`.
-   - Private/Internal path: leave in production unverified. Public path: submit
-     for verification with per-scope justification + a YouTube screencast
-     showing the consent flow and why `script.external_request` is needed
-     (posting to the user's own Discord webhook).
-
-3. **Marketplace SDK** (GCP console → search "Google Workspace Marketplace SDK" → Enable):
-   - **App Configuration**: App visibility Private (domain) or Public; App
-     integration → **Editor add-on → Sheets**; enter the Script ID and
-     **version number 1** (use the deployment ID if the console asks for a
-     deployment instead).
-   - **Store Listing**: name, short/long description, icons (32×32, 128×128),
-     at least one 1280×800 screenshot (the sidebar over a responses sheet),
-     category (e.g. Productivity), support/setup URLs.
-   - Publish. Private: install from Marketplace while signed into the domain.
-
-4. **Post-install QA** (fresh account ideally): install → open a form-linked
-   sheet → Extensions menu shows the add-on → Configure → Save → Send test →
-   Enable posting → submit a form response.
+1. **Test the draft install.** Signed in as a test user, open the draft listing
+   URL above and install. Verify the add-on appears under Extensions in a
+   form-linked sheet and that configure → send test → enable posting works from
+   a clean install.
+2. **OAuth verification** (required before anyone outside the test-user list can
+   install). Google Auth Platform → Verification Center → prepare:
+   - Homepage: https://github.com/frostdev-ops/sheets-webhook
+   - Privacy policy: `PRIVACY.md` in this repo
+   - Scope justification for `script.external_request`: the add-on posts the
+     user's own form responses to the Discord webhook URL that the user
+     configures; `urlFetchWhitelist` in `appsscript.json` restricts outbound
+     requests to `discord.com`/`discordapp.com` webhook paths.
+   - A screencast showing the OAuth consent flow and the feature that needs the
+     scope. Expect days-to-weeks turnaround.
+3. **Submit for review** on the Store Listing tab (button is enabled now). This
+   is the Marketplace app review, separate from OAuth verification. Do not
+   submit until step 1 passes.
 
 ## Releasing updates
 
@@ -57,6 +52,6 @@ npx @google/clasp push -f
 npx @google/clasp create-version "what changed"
 ```
 
-Then bump the version number in Marketplace SDK → App Configuration (or
-`npx @google/clasp update-deployment <deploymentId> -V <version>` if it was
-wired to the deployment). Store-listing-only edits don't need a new version.
+Then bump the version number in Marketplace SDK → App Configuration → Sheets
+add-on script version, and Save. Store-listing-only edits don't need a new
+script version, but any listing change re-enters review once published.
